@@ -1,576 +1,616 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Romaji Converter — Enhanced</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Romaji Converter - IT-E6 Enhanced</title>
+    <meta name="theme-color" content="#6366F1">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    
+    <style>
+        /* Biến CSS cho Light/Dark Mode */
+        :root {
+            --card-bg: rgba(255, 255, 255, 0.98);
+            --page-bg-light: #f0f2f5;
+            --text-dark: #1f2937;
+            --primary-indigo: #6366F1;
+        }
+        [data-theme="dark"] {
+            --card-bg: #0b1220;
+            --page-bg-light: #071029;
+            --text-dark: #e5e7eb;
+            --primary-indigo: #7c3aed;
+        }
 
-  <!-- Tailwind CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Font Awesome -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--page-bg-light);
+            transition: background-color 0.3s;
+            color: var(--text-dark);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+        }
 
-  <style>
-    :root {
-      --card-bg: #ffffff;
-      --page-bg: linear-gradient(135deg,#f0f4f8,#d9e2ec);
-      --accent: #6366f1;
-    }
-    [data-theme="dark"] {
-      --card-bg: #0b1220;
-      --page-bg: linear-gradient(135deg,#071029,#0f1724);
-      --accent: #7c3aed;
-    }
+        /* Nền Canvas (Matrix Rain) */
+        #matrix-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.15;
+            transition: opacity 0.5s;
+        }
+        [data-theme="dark"] #matrix-background {
+             opacity: 0.4; /* Sáng hơn trong Dark Mode */
+        }
 
-    body {
-      font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-      background: var(--page-bg);
-      min-height: 100vh;
-    }
+        /* Container chứa App */
+        .app-container {
+            background-color: var(--card-bg);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            transition: background-color 0.3s, box-shadow 0.3s;
+            width: 90%;
+            max-width: 480px;
+            margin-top: 20px;
+            margin-bottom: 20px;
+            padding: 30px;
+            border-radius: 15px;
+            z-index: 2;
+        }
 
-    .card {
-      background: var(--card-bg);
-      border-radius: 1rem;
-      box-shadow: 0 15px 30px rgba(2,6,23,0.12);
-      padding: 2rem;
-      max-width: 760px;
-      width: 100%;
-      margin: 2rem auto;
-      transition: transform .18s ease, box-shadow .18s ease;
-    }
-    .card:active { transform: translateY(1px); box-shadow: 0 8px 20px rgba(2,6,23,0.08); }
+        /* Input/Select style */
+        .input-field {
+            border: 1px solid #d1d5db;
+            background-color: #f9fafb;
+            color: var(--text-dark);
+            transition: border-color 0.3s, box-shadow 0.3s, background-color 0.3s;
+        }
+        [data-theme="dark"] .input-field {
+            border-color: #374151;
+            background-color: #1f2937;
+            color: #d1d5db;
+        }
+        .input-field:focus {
+            border-color: var(--primary-indigo);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.4);
+        }
 
-    /* Result box styling */
-    .result-panel {
-      background: linear-gradient(90deg, rgba(236,249,255,0.9), rgba(239,246,255,0.85));
-      border-left: 6px solid rgba(99,102,241,0.9);
-      padding: 1.25rem;
-      border-radius: 0.75rem;
-      box-shadow: inset 0 1px 3px rgba(0,0,0,0.03);
-    }
+        /* Result Text */
+        #resultOutput {
+            font-size: 30px;
+            font-weight: 900;
+            color: var(--primary-indigo);
+            padding: 10px 0;
+            line-height: 1.4;
+            text-align: center;
+        }
+        .word {
+            display: inline-block;
+            transition: background 0.15s ease;
+            border-radius: 4px;
+            padding: 2px 4px;
+        }
+        .word.highlight {
+            background: rgba(99, 102, 241, 0.2);
+            color: #000; /* Đảm bảo chữ nổi bật */
+        }
+        [data-theme="dark"] .word.highlight {
+            background: rgba(124, 58, 237, 0.4); /* Màu tím đậm cho dark mode */
+            color: #fff;
+        }
 
-    .result-text {
-      font-weight: 800;
-      font-size: 1.9rem;
-      line-height: 1.05;
-      letter-spacing: 0.2px;
-      margin: 0.25rem 0;
-      display: inline-block;
-      word-break: break-word;
-    }
-
-    .word {
-      display: inline-block;
-      padding: 0.08rem 0.28rem;
-      border-radius: 0.35rem;
-      transition: background .12s ease, transform .08s ease;
-      cursor: pointer;
-    }
-    .word:hover { transform: translateY(-2px); }
-    .word.highlight {
-      background: rgba(99,102,241,0.14);
-      box-shadow: 0 6px 18px rgba(99,102,241,0.12);
-    }
-
-    /* history list */
-    .history-item {
-      display:flex; justify-content:space-between; align-items:center;
-      gap:.6rem; padding:.5rem .6rem; border-radius:.5rem;
-    }
-    .history-item:hover { background: rgba(99,102,241,0.03); }
-
-    .button-small { padding: .4rem .6rem; border-radius:.6rem; }
-
-    .muted { color: #6b7280; }
-
-    /* loading speaker */
-    .loading-speaker { animation: pulse 1s infinite; opacity:0.85; }
-    @keyframes pulse {
-      0% { transform: scale(1); } 50% { transform: scale(1.02); } 100% { transform: scale(1); }
-    }
-
-    /* responsive */
-    @media (max-width:640px){
-      .result-text { font-size: 1.4rem; }
-    }
-  </style>
+    </style>
 </head>
-<body>
+<body class="p-4" data-theme="light">
 
-  <div class="card" id="appCard" role="main" aria-labelledby="appTitle">
-    <div class="flex items-start justify-between gap-4">
-      <div>
-        <h1 id="appTitle" class="text-3xl font-extrabold" style="color:var(--accent)">
-          <i class="fa-solid fa-language mr-2"></i> Romaji Converter
-        </h1>
-        <p class="text-sm muted">Chuyển số → Romaji (0 - 9,999,999). Có lịch sử, TTS, karaoke, và dark mode.</p>
-      </div>
-
-      <div class="flex items-center gap-2">
-        <label class="flex items-center gap-2 text-sm muted">
-          <input type="checkbox" id="autoSpeakToggle" />
-          Auto-speak
-        </label>
-
-        <button id="themeToggle" class="button-small bg-gray-100 hover:bg-gray-200 text-sm px-3">
-          <i class="fa-solid fa-moon"></i>
-        </button>
-      </div>
-    </div>
-
-    <!-- input area -->
-    <div class="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4 items-center">
-      <input id="numberInput" type="number" min="0" max="9999999"
-             class="col-span-2 px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-400"
-             placeholder="Nhập số (ví dụ: 361, 6665)">
-
-      <button id="convertButton" class="bg-gradient-to-r from-indigo-600 to-indigo-400 text-white font-bold py-3 rounded-lg hover:shadow-lg">
-        <i class="fa-solid fa-arrow-right mr-2"></i> Chuyển Đổi Ngay
-      </button>
-    </div>
-
-    <!-- result area -->
-    <div id="resultArea" class="mt-6 hidden">
-      <div class="result-panel">
-        <div class="flex justify-between items-start">
-          <div>
-            <p class="font-medium text-sm">Kết Quả Romaji:</p>
-            <div id="resultOutput" class="result-text mt-2"></div>
-            <p id="kanaOutput" class="muted text-sm mt-2"></p>
-          </div>
-
-          <div class="flex flex-col items-end space-y-2">
-            <button id="speakBtn" class="button-small bg-pink-500 text-white">
-              <i id="speakerIcon" class="fa-solid fa-volume-high mr-2"></i><span id="speakerText">Đọc</span>
+    <canvas id="matrix-background"></canvas>
+    
+    <div class="app-container">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-3xl font-extrabold" style="color:var(--primary-indigo)">
+                <i class="fa-solid fa-language mr-2"></i> Romaji Converter
+            </h1>
+            <button id="themeToggle" class="p-2 rounded-full text-xl hover:bg-gray-200 dark:hover:bg-gray-700" title="Chuyển đổi chế độ sáng/tối">
+                <i class="fa-solid fa-moon"></i>
             </button>
-            <button id="copyBtn" class="button-small bg-blue-500 text-white">
-              <i class="fa-regular fa-copy mr-2"></i> Sao chép
+        </div>
+
+        <div class="text-center mb-6 text-sm text-gray-600 dark:text-gray-400 border-b pb-4 border-gray-200 dark:border-gray-700">
+            Chương trình Công nghệ Thông tin Việt Nhật (IT-E6) - ĐH Bách Khoa Hà Nội
+        </div>
+
+        <div class="mb-6 bg-gray-100 dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700">
+            <p class="text-lg font-bold flex items-center mb-3" style="color:var(--primary-indigo)">
+                <i class="fas fa-sliders-h mr-2"></i>Tùy Chỉnh Giọng Đọc
+            </p>
+            
+            <div class="mb-3">
+                <label for="voiceSelect" class="block text-sm font-semibold mb-1">
+                    <i class="fas fa-microphone-alt mr-1"></i>Giọng Đọc:
+                </label>
+                <select id="voiceSelect" class="input-field w-full p-2 text-sm rounded-lg">
+                    <option value="-1">Đang tải giọng đọc...</option>
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label for="rateInput" class="block text-sm font-semibold mb-1 flex justify-between items-center">
+                    <span><i class="fas fa-tachometer-alt mr-1"></i>Tốc Độ:</span>
+                    <span id="rateValue" class="text-gray-500 dark:text-gray-400 text-xs">0.9</span>
+                </label>
+                <input type="range" id="rateInput" min="0.5" max="2.0" step="0.1" value="0.9" class="w-full h-2 bg-indigo-200 rounded-lg appearance-none cursor-pointer">
+            </div>
+        </div>
+
+        <div class="space-y-4 mb-6">
+            <label for="numberInput" class="block text-lg font-semibold">
+                <i class="fas fa-hashtag mr-2" style="color:var(--primary-indigo)"></i>Nhập Số Cần Chuyển Đổi:
+            </label>
+            <input type="number" id="numberInput" placeholder="Ví dụ: 10000, 350000, 9999999"  
+                    class="input-field w-full p-3 text-lg rounded-lg"
+                    min="0" max="9999999">
+            
+            <button id="convertButton"  
+                    class="w-full text-white py-3 rounded-xl font-bold text-xl tracking-wide transition transform hover:scale-[1.01]"
+                    style="background-color:var(--primary-indigo)">
+                <i class="fas fa-arrow-right mr-2"></i>Chuyển Đổi Ngay
             </button>
-          </div>
         </div>
-      </div>
 
-      <!-- message -->
-      <div id="messageBox" class="mt-3"></div>
-    </div>
-
-    <!-- history -->
-    <div class="mt-6">
-      <div class="flex items-center justify-between mb-2">
-        <h3 class="text-sm font-medium">Lịch sử (localStorage)</h3>
-        <div class="flex items-center gap-2">
-          <button id="clearHistory" class="text-sm muted hover:text-red-500"><i class="fa-solid fa-trash"></i> Xóa</button>
+        <div id="resultBox" class="p-4 mt-6 hidden border rounded-xl bg-indigo-50 dark:bg-gray-900 border-indigo-200 dark:border-gray-700">
+            <div class="flex justify-between items-start mb-3">
+                <p class="text-base font-semibold">
+                    <i class="fas fa-check-circle mr-2 text-indigo-500"></i>Kết Quả Romaji:
+                </p>
+                <div class="flex space-x-2">
+                    <button id="speakerButton"  
+                            class="p-2 rounded-full bg-pink-500 text-white hover:bg-pink-600 transition"
+                            title="Nghe phát âm Romaji">
+                        <i class="fas fa-volume-up"></i>
+                    </button>
+                    <button id="copyButton"  
+                            class="p-2 rounded-full bg-blue-500 text-white hover:bg-blue-600 transition"
+                            title="Sao chép kết quả">
+                        <i class="fas fa-copy"></i>
+                    </button>
+                </div>
+            </div>
+            <div id="resultOutput" class="text-text-dark text-3xl font-extrabold"></div>
         </div>
-      </div>
-      <div id="historyList" class="space-y-2"></div>
+
+        <div id="messageBox" class="mt-4 p-4 text-sm hidden rounded-xl" role="alert">
+            <p id="messageText" class="flex items-center"></p>
+        </div>
     </div>
-  </div>
+    
+    <footer class="text-center mt-6 text-sm p-4 w-full max-w-lg text-gray-500 dark:text-gray-400">
+        <p>Phát triển bởi: Lợi Lê IT E6</p>
+    </footer>
 
-  <script>
-    /* ---------------------------
-       Utilities & Constants
-       --------------------------- */
+    <script>
+        // --- LOGIC MATRIX RAIN (NỀN CODE) ---
+        const canvas = document.getElementById('matrix-background');
+        const ctx = canvas.getContext('2d');
+        let width = canvas.width = window.innerWidth;
+        let height = canvas.height = window.innerHeight;
+        const katakana = 'アァカサタナハマヤラワガザダバパイィキシチニヒミリヰギジヂビピウゥク' + 'スツヌフムユルグズブプエェケセテネヘメレヱゲゼデベペオォコソトノホモヨロヲゴゾドボポヴッン0123456789';
+        const characters = katakana.split('');
+        const fontSize = 16;
+        let columns = Math.floor(width / fontSize);
+        let drops = Array(columns).fill(1);
+        let animationInterval;
 
-    const MAX_HISTORY = 10;
-    const LS_KEY = "romaji_converter_history_v1";
-    const THEME_KEY = "romaji_converter_theme";
-    const AUTO_SPEAK_KEY = "romaji_converter_auto_speak";
+        function draw() {
+            const isDarkMode = document.body.getAttribute('data-theme') === 'dark';
+            ctx.fillStyle = isDarkMode ? 'rgba(0, 0, 0, 0.05)' : 'rgba(240, 242, 245, 0.05)';
+            ctx.fillRect(0, 0, width, height);
+            ctx.fillStyle = isDarkMode ? '#00cc33' : '#00ff41';
+            ctx.font = `${fontSize}px monospace`;
 
-    // tokens we might output -> kana mapping (hiragana)
-    const TOKEN_TO_HIRAGANA = {
-      "zero": "ぜろ",
-      "ichi": "いち",
-      "ni": "に",
-      "san": "さん",
-      "yon": "よん",
-      "shi": "し",
-      "go": "ご",
-      "roku": "ろく",
-      "nana": "なな",
-      "hachi": "はち",
-      "kyuu": "きゅう",
-      "juu": "じゅう",
-      "hyaku": "ひゃく",
-      "sanbyaku": "さんびゃく",
-      "roppyaku": "ろっぴゃく",
-      "happyaku": "はっぴゃく",
-      "sen": "せん",
-      "sanzen": "さんぜん",
-      "hassen": "はっせん",
-      "man": "まん",
-      "ichiman": "いちまん"
-    };
-
-    /* ---------------------------
-       Number -> Romaji conversion
-       (based on your logic, improved)
-       --------------------------- */
-    const ichi = ["rei","ichi","ni","san","yon","go","roku","nana","hachi","kyuu"];
-    function convertThreeDigits(n) {
-      if (n === 0) return "";
-      let parts = [];
-      const h = Math.floor(n/100), j = Math.floor((n%100)/10), d = n%10;
-      if (h>0) {
-        let r;
-        if (h===3) r = "sanbyaku";
-        else if (h===6) r = "roppyaku";
-        else if (h===8) r = "happyaku";
-        else if (h===1) r = "hyaku";
-        else r = ichi[h] + "hyaku";
-        parts.push(r);
-      }
-      if (j>0) parts.push((j===1) ? "juu" : ichi[j]+"juu");
-      if (d>0) parts.push(ichi[d]);
-      return parts.join(" ");
-    }
-    function convertFourDigits(n) {
-      if (n === 0) return "";
-      let parts = [];
-      const s = Math.floor(n/1000);
-      const rem = n%1000;
-      if (s>0) {
-        let r;
-        if (s===3) r = "sanzen";
-        else if (s===8) r = "hassen";
-        else if (s===1) r = "sen";
-        else r = ichi[s] + "sen";
-        parts.push(r);
-      }
-      const remR = convertThreeDigits(rem);
-      if (remR) parts.push(remR);
-      return parts.join(" ");
-    }
-    function convertNumberToRomaji(number) {
-      number = parseInt(number,10);
-      if (isNaN(number)) return "";
-      if (number===0) return "rei";
-      const manPart = Math.floor(number/10000);
-      const unitPart = number%10000;
-      let parts = [];
-      if (manPart>0) {
-        let manReading;
-        if (manPart===1) manReading = "ichiman";
-        else manReading = convertThreeDigits(manPart) + " man";
-        parts.push(manReading);
-      }
-      if (unitPart>0) {
-        const u = convertFourDigits(unitPart);
-        if (u) parts.push(u);
-      }
-      let res = parts.join(" ").replace(/\bichi man\b/g,"ichiman").trim();
-      // normalize spaces
-      res = res.replace(/\s+/g,' ');
-      return res;
-    }
-
-    /* ---------------------------
-       Romaji -> Hiragana (simple token map)
-       We will convert tokens we output using TOKEN_TO_HIRAGANA
-       --------------------------- */
-    function romajiToHiragana(romaji) {
-      if (!romaji) return "";
-      const tokens = romaji.split(/\s+/);
-      const kanaParts = tokens.map(t => {
-        const low = t.toLowerCase();
-        // try direct token
-        if (TOKEN_TO_HIRAGANA[low]) return TOKEN_TO_HIRAGANA[low];
-        // if pattern like 'ichi' or digits fallback
-        // handle simple combos like 'rokujuu' => roku + juu
-        // try split at known sub-tokens
-        let built = "";
-        let remainder = low;
-        // greedy match tokens
-        while (remainder.length>0) {
-          let matched = false;
-          // find longest token key prefix
-          const keys = Object.keys(TOKEN_TO_HIRAGANA).sort((a,b)=>b.length-a.length);
-          for (const k of keys) {
-            if (remainder.startsWith(k)) {
-              built += TOKEN_TO_HIRAGANA[k];
-              remainder = remainder.slice(k.length);
-              matched = true;
-              break;
+            for (let i = 0; i < drops.length; i++) {
+                const text = characters[Math.floor(Math.random() * characters.length)];
+                ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+                if (drops[i] * fontSize > height && Math.random() > 0.975) {
+                    drops[i] = 0;
+                }
+                drops[i]++;
             }
-          }
-          if (!matched) { 
-            // fallback: remove first char
-            built += remainder[0];
-            remainder = remainder.slice(1);
-          }
         }
-        return built;
-      });
-      return kanaParts.join(' ');
-    }
-
-    /* ---------------------------
-       UI & TTS logic
-       --------------------------- */
-    const numberInput = document.getElementById('numberInput');
-    const convertButton = document.getElementById('convertButton');
-    const resultArea = document.getElementById('resultArea');
-    const resultOutput = document.getElementById('resultOutput');
-    const kanaOutput = document.getElementById('kanaOutput');
-    const speakBtn = document.getElementById('speakBtn');
-    const copyBtn = document.getElementById('copyBtn');
-    const messageBox = document.getElementById('messageBox');
-    const historyList = document.getElementById('historyList');
-    const clearHistoryBtn = document.getElementById('clearHistory');
-    const autoSpeakToggle = document.getElementById('autoSpeakToggle');
-    const themeToggle = document.getElementById('themeToggle');
-    const appCard = document.getElementById('appCard');
-
-    let isSpeaking = false;
-    let highlightTimer = null;
-
-    // load settings
-    (function loadSettings(){
-      const theme = localStorage.getItem(THEME_KEY) || 'light';
-      setTheme(theme);
-      const auto = localStorage.getItem(AUTO_SPEAK_KEY);
-      autoSpeakToggle.checked = (auto === '1');
-    })();
-
-    function setTheme(theme){
-      if (theme === 'dark') document.documentElement.setAttribute('data-theme','dark');
-      else document.documentElement.removeAttribute('data-theme');
-      localStorage.setItem(THEME_KEY, theme);
-    }
-    themeToggle.addEventListener('click', ()=>{
-      const current = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
-      const next = current === 'dark' ? 'light' : 'dark';
-      setTheme(next);
-    });
-
-    autoSpeakToggle.addEventListener('change', ()=>{
-      localStorage.setItem(AUTO_SPEAK_KEY, autoSpeakToggle.checked ? '1' : '0');
-    });
-
-    function showMessage(msg, isError=true){
-      messageBox.textContent = msg;
-      messageBox.className = isError ? 'text-red-600 mt-3' : 'text-green-600 mt-3';
-      if (!msg) messageBox.className = '';
-    }
-
-    // display romaji as word spans (clickable)
-    function renderRomajiWords(romaji){
-      resultOutput.innerHTML = '';
-      const words = romaji.split(/\s+/).filter(Boolean);
-      words.forEach((w, idx)=>{
-        const span = document.createElement('span');
-        span.className = 'word';
-        span.textContent = w + (idx < words.length-1 ? ' ' : '');
-        span.dataset.word = w;
-        span.addEventListener('click', () => speakSingleWord(w, span));
-        resultOutput.appendChild(span);
-      });
-    }
-
-    // speak a single word
-    function speakSingleWord(word, el){
-      if (!('speechSynthesis' in window)) {
-        showMessage('Trình duyệt không hỗ trợ TTS.', true); return;
-      }
-      const ut = new SpeechSynthesisUtterance(word.replace(/-/g,' '));
-      ut.lang = 'ja-JP';
-      ut.rate = 0.95;
-      ut.onstart = ()=> el.classList.add('highlight');
-      ut.onend = ()=> el.classList.remove('highlight');
-      speechSynthesis.speak(ut);
-    }
-
-    // speak full romaji with karaoke-ish highlight
-    function speakFullRomaji(romajiText){
-      if (!('speechSynthesis' in window)) {
-        showMessage('Trình duyệt không hỗ trợ TTS.', true); return;
-      }
-      if (!romajiText) return;
-      // clear previous highlight timer
-      if (highlightTimer) { clearInterval(highlightTimer); highlightTimer = null; }
-      const spans = Array.from(resultOutput.querySelectorAll('.word'));
-      // estimate durations per word by length (ms per char)
-      const msPerChar = 110; // adjust if needed
-      const durations = spans.map(s => Math.max(220, s.textContent.trim().length * msPerChar));
-
-      // create utterance
-      const u = new SpeechSynthesisUtterance(romajiText.replace(/-/g,' '));
-      u.lang = 'ja-JP';
-      u.rate = 0.95;
-      isSpeaking = true;
-      speakBtn.classList.add('loading-speaker');
-      document.getElementById('speakerIcon').classList.add('fa-spin');
-
-      // start manual highlight scheduler (approximate)
-      let idx = 0;
-      spans.forEach(s => s.classList.remove('highlight'));
-      highlightTimer = setInterval(()=>{
-        // remove previous
-        spans.forEach(s => s.classList.remove('highlight'));
-        if (idx < spans.length) {
-          spans[idx].classList.add('highlight');
+        function startMatrix() {
+            if (animationInterval) clearInterval(animationInterval);
+            animationInterval = setInterval(draw, 33);
         }
-        idx++;
-        if (idx > spans.length) {
-          clearInterval(highlightTimer);
-          highlightTimer = null;
-        }
-      }, 250); // fast tick; actual highlights align roughly with speech
-
-      u.onend = () => {
-        isSpeaking = false;
-        speakBtn.classList.remove('loading-speaker');
-        document.getElementById('speakerIcon').classList.remove('fa-spin');
-        spans.forEach(s => s.classList.remove('highlight'));
-        if (highlightTimer) { clearInterval(highlightTimer); highlightTimer = null; }
-      };
-
-      u.onerror = (e) => {
-        console.error('TTS error', e);
-        isSpeaking = false;
-        speakBtn.classList.remove('loading-speaker');
-        document.getElementById('speakerIcon').classList.remove('fa-spin');
-        showMessage('Không thể phát âm thanh.', true);
-      };
-
-      speechSynthesis.cancel(); // cancel previous
-      speechSynthesis.speak(u);
-    }
-
-    // copy text to clipboard
-    async function copyToClipboard(text){
-      try {
-        await navigator.clipboard.writeText(text);
-        showMessage('Đã sao chép vào clipboard.', false);
-      } catch (e) {
-        console.error(e);
-        showMessage('Không thể sao chép tự động. Hãy thử thủ công.', true);
-      }
-    }
-
-    // history management
-    function loadHistory(){
-      const raw = localStorage.getItem(LS_KEY);
-      if (!raw) return [];
-      try { return JSON.parse(raw) || []; } catch { return []; }
-    }
-    function saveHistory(hist){
-      localStorage.setItem(LS_KEY, JSON.stringify(hist.slice(0,MAX_HISTORY)));
-    }
-    function pushHistory(item){
-      const hist = loadHistory();
-      // remove duplicates of same number
-      const filtered = hist.filter(h => h.number !== item.number);
-      filtered.unshift(item);
-      saveHistory(filtered);
-      renderHistory();
-    }
-    function clearHistory(){
-      localStorage.removeItem(LS_KEY);
-      renderHistory();
-    }
-    function renderHistory(){
-      const hist = loadHistory();
-      historyList.innerHTML = '';
-      if (!hist.length) {
-        historyList.innerHTML = '<p class="muted text-sm">Chưa có lịch sử — thử chuyển đổi một số.</p>';
-        return;
-      }
-      hist.forEach(h => {
-        const row = document.createElement('div');
-        row.className = 'history-item';
-        row.innerHTML = `
-          <div>
-            <div class="text-sm font-medium">${h.number.toLocaleString()}</div>
-            <div class="text-xs muted">${h.romaji}</div>
-          </div>
-          <div class="flex items-center gap-2">
-            <button class="button-small bg-gray-100" data-action="play" title="Phát lại"><i class="fa-solid fa-play"></i></button>
-            <button class="button-small bg-gray-100" data-action="copy" title="Sao chép"><i class="fa-regular fa-copy"></i></button>
-          </div>
-        `;
-        // events
-        row.querySelector('[data-action="play"]').addEventListener('click', ()=> {
-          // show and speak
-          showResult(h.number, h.romaji, true);
+        window.addEventListener('resize', () => {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+            columns = Math.floor(width / fontSize);
+            drops = Array(columns).fill(1);
         });
-        row.querySelector('[data-action="copy"]').addEventListener('click', ()=> {
-          copyToClipboard(`${h.number} → ${h.romaji}`);
+        startMatrix();
+        // --- KẾT THÚC MATRIX RAIN ---
+
+
+        // --- LOGIC CHUYỂN ĐỔI SỐ SANG ROMAJI ---
+        const MAX_NUMBER_LIMIT = 9999999;
+        const ichikyuu = ["rei", "ichi", "ni", "san", "yon", "go", "roku", "nana", "hachi", "kyuu"];
+        const unit_hyaku = "hyaku";
+        const unit_juu = "juu";
+        const unit_sen = "sen";
+        const unit_man = "man";
+
+        function convertThreeDigits(number) {
+            if (number === 0) return "";
+            let parts = [];
+            const h = Math.floor(number / 100);
+            const remainder = number % 100;
+
+            if (h > 0) {
+                let reading;
+                if (h === 3) reading = "sanbyaku";
+                else if (h === 6) reading = "roppyaku";
+                else if (h === 8) reading = "happyaku";
+                else if (h === 1) reading = unit_hyaku;
+                else reading = ichikyuu[h] + unit_hyaku;
+                parts.push(reading);
+            }
+
+            const j = Math.floor(remainder / 10);
+            const d = remainder % 10;
+            
+            if (j > 0) {
+                let reading = (j === 1) ? unit_juu : ichikyuu[j] + unit_juu;
+                parts.push(reading);
+            }
+            if (d > 0) {
+                parts.push(ichikyuu[d]);
+            }
+            return parts.join(" ");
+        }
+
+        function convertFourDigits(number) {
+            if (number === 0) return "";
+            const sen = Math.floor(number / 1000);
+            const remainder = number % 1000;
+            let parts = [];
+
+            if (sen > 0) {
+                let reading;
+                if (sen === 3) reading = "sanzen";
+                else if (sen === 8) reading = "hassen";
+                else if (sen === 1) reading = unit_sen;
+                else reading = ichikyuu[sen] + unit_sen;
+                parts.push(reading);
+            }
+
+            const remainderReading = convertThreeDigits(remainder);
+            if (remainderReading) {
+                parts.push(remainderReading);
+            }
+            return parts.join(" ");
+        }
+
+        function convertNumberToRomaji(number) {
+            number = parseInt(number, 10);
+            if (number === 0) return ichikyuu[0];
+
+            const manPart = Math.floor(number / 10000);
+            const unitPart = number % 10000;
+            let parts = [];
+
+            if (manPart > 0) {
+                let manReading;
+                if (manPart === 1) {
+                    manReading = "ichiman";
+                } else {
+                    let baseReading = convertFourDigits(manPart);
+                    manReading = baseReading + " " + unit_man;
+                }
+                parts.push(manReading);
+            }
+
+            if (unitPart > 0) {
+                const unitReading = convertFourDigits(unitPart);
+                if (unitReading) {
+                    parts.push(unitReading);
+                }
+            }
+            
+            let result = parts.join(" ").trim();
+            
+            // Xử lý các trường hợp đặc biệt bị khoảng trắng do logic chung
+            result = result.replace(/ichi man/g, "ichiman");
+            result = result.replace(/ichi sen/g, unit_sen);
+            result = result.replace(/ichi hyaku/g, unit_hyaku);
+            result = result.replace(/\s+/g, ' ').trim(); // Loại bỏ khoảng trắng thừa
+
+            return result;
+        }
+        // --- KẾT THÚC LOGIC CHUYỂN ĐỔI ---
+
+
+        // --- LOGIC GIỌNG ĐỌC (TTS) VÀ KARAOKE HIGHLIGHT ---
+        let voices = [];
+        let selectedVoiceIndex = -1;
+        let isSpeaking = false;
+        let utterance = null;
+        let romajiWords = []; // Lưu trữ các từ Romaji đã tách
+
+        function populateVoiceList() {
+            if (!('speechSynthesis' in window)) return;
+            
+            voices = window.speechSynthesis.getVoices();
+            const voiceSelect = document.getElementById('voiceSelect');
+            voiceSelect.innerHTML = '';
+            
+            let jaVoicesFound = 0;
+            let firstJaVoiceIndex = -1;
+
+            for (let i = 0; i < voices.length; i++) {
+                if (voices[i].lang.startsWith('ja')) {
+                    const option = document.createElement('option');
+                    option.textContent = voices[i].name + ' (' + voices[i].lang + ')';
+                    option.value = i;
+                    voiceSelect.appendChild(option);
+                    jaVoicesFound++;
+                    if (firstJaVoiceIndex === -1) {
+                        firstJaVoiceIndex = i;
+                    }
+                }
+            }
+            
+            if (jaVoicesFound > 0) {
+                selectedVoiceIndex = firstJaVoiceIndex;
+                voiceSelect.value = firstJaVoiceIndex;
+                voiceSelect.disabled = false;
+            } else {
+                const option = document.createElement('option');
+                option.textContent = 'Không tìm thấy giọng Nhật Bản (ja-JP)';
+                option.value = -1;
+                voiceSelect.appendChild(option);
+                voiceSelect.disabled = true;
+                selectedVoiceIndex = -1;
+            }
+        }
+        
+        // Cần gọi populateVoiceList khi trình duyệt tải xong danh sách giọng đọc
+        if (window.speechSynthesis.onvoiceschanged !== undefined) {
+            window.speechSynthesis.onvoiceschanged = populateVoiceList;
+        }
+
+        function renderRomajiForHighlight(romajiText) {
+            const outputElement = document.getElementById('resultOutput');
+            outputElement.innerHTML = '';
+            
+            // Tách thành từng từ (khoảng trắng)
+            romajiWords = romajiText.split(/\s+/g).filter(word => word.length > 0);
+            
+            romajiWords.forEach((word, index) => {
+                const span = document.createElement('span');
+                span.className = 'word';
+                span.textContent = word;
+                span.setAttribute('data-index', index);
+                outputElement.appendChild(span);
+                if (index < romajiWords.length - 1) {
+                    outputElement.appendChild(document.createTextNode(' '));
+                }
+            });
+        }
+        
+        function speakRomaji(romajiText) {
+            if (!romajiText || !('speechSynthesis' in window)) return;
+
+            const speakerButton = document.getElementById('speakerButton');
+            
+            if (window.speechSynthesis.speaking) {
+                window.speechSynthesis.cancel();
+                if (isSpeaking) {
+                    // Nếu đang nói, thì dừng lại và reset nút
+                    isSpeaking = false;
+                    speakerButton.innerHTML = '<i class="fas fa-volume-up"></i>';
+                    return;
+                }
+            }
+            
+            utterance = new SpeechSynthesisUtterance(romajiText);
+            
+            if (selectedVoiceIndex !== -1 && voices.length > selectedVoiceIndex) {
+                const voice = voices[selectedVoiceIndex];
+                utterance.voice = voice;
+                utterance.lang = voice.lang;
+            } else {
+                utterance.lang = 'ja-JP';
+            }
+            
+            utterance.rate = parseFloat(document.getElementById('rateInput').value);
+            utterance.pitch = parseFloat(document.getElementById('pitchInput').value);
+            
+            let currentWordIndex = 0;
+            const wordElements = document.querySelectorAll('#resultOutput .word');
+
+            // Xử lý Highlight Karaoke (Sử dụng onboundary)
+            utterance.onboundary = (event) => {
+                if (event.name === 'word') {
+                    // Xóa highlight cũ
+                    wordElements.forEach(el => el.classList.remove('highlight'));
+
+                    // Tìm từ gần nhất trong mảng romajiWords khớp với từ đang đọc
+                    const currentSpokenWord = romajiText.substring(event.charIndex).split(/\s+/g)[0].toLowerCase();
+                    
+                    let bestMatchIndex = -1;
+                    
+                    // Lọc tìm vị trí từ trong output
+                    for(let i = 0; i < romajiWords.length; i++) {
+                        if (romajiWords[i].toLowerCase().includes(currentSpokenWord) || currentSpokenWord.includes(romajiWords[i].toLowerCase())) {
+                            bestMatchIndex = i;
+                            break;
+                        }
+                    }
+
+                    if (bestMatchIndex !== -1 && wordElements[bestMatchIndex]) {
+                        wordElements[bestMatchIndex].classList.add('highlight');
+                        currentWordIndex = bestMatchIndex;
+                    } else if (wordElements[currentWordIndex]) {
+                         // Nếu không tìm thấy, highlight từ tiếp theo trong chuỗi đã tách
+                        wordElements[currentWordIndex].classList.add('highlight');
+                        currentWordIndex++;
+                    }
+                }
+            };
+
+            utterance.onstart = () => {
+                isSpeaking = true;
+                speakerButton.innerHTML = '<i class="fas fa-stop text-red-500"></i>';
+                showMessage("Đang phát âm Romaji...", false, true);
+            };
+
+            utterance.onend = () => {
+                isSpeaking = false;
+                speakerButton.innerHTML = '<i class="fas fa-volume-up"></i>';
+                wordElements.forEach(el => el.classList.remove('highlight'));
+                document.getElementById('messageBox').classList.add('hidden');
+            };
+            
+            window.speechSynthesis.speak(utterance);
+        }
+        // --- KẾT THÚC LOGIC TTS ---
+
+        // --- HÀM XỬ LÝ SỰ KIỆN GIAO DIỆN VÀ DARK MODE ---
+        
+        function showMessage(text, isError = false, isInfo = false) {
+            const messageBox = document.getElementById('messageBox');
+            const messageText = document.getElementById('messageText');
+            
+            if (!messageBox || !messageText) return;
+
+            messageText.innerHTML = `<i class="fas mr-2"></i><span>${text}</span>`;
+            messageBox.className = 'mt-4 p-4 text-sm rounded-xl border';
+            messageBox.classList.remove('hidden');
+
+            // Reset classes
+            messageBox.classList.remove('border-red-300', 'bg-red-50', 'text-red-700', 'border-green-300', 'bg-green-50', 'text-green-700', 'border-blue-300', 'bg-blue-50', 'text-blue-700');
+            messageText.querySelector('i').className = 'fas mr-2';
+
+            if (isError) {
+                messageBox.classList.add('border-red-300', 'bg-red-50', 'text-red-700');
+                messageText.querySelector('i').classList.add('fa-exclamation-triangle');
+            } else if (isInfo) {
+                 messageBox.classList.add('border-blue-300', 'bg-blue-50', 'text-blue-700');
+                messageText.querySelector('i').classList.add('fa-info-circle');
+            } else {
+                messageBox.classList.add('border-green-300', 'bg-green-50', 'text-green-700');
+                messageText.querySelector('i').classList.add('fa-check-circle');
+                setTimeout(() => { messageBox.classList.add('hidden'); }, 3000);
+            }
+        }
+        
+        function handleConversion() {
+            try {
+                const inputElement = document.getElementById('numberInput');
+                const resultBox = document.getElementById('resultBox');
+                
+                if (window.speechSynthesis.speaking) {
+                    window.speechSynthesis.cancel();
+                }
+
+                const rawInput = inputElement.value.trim();
+                document.getElementById('messageBox').classList.add('hidden');
+                resultBox.classList.add('hidden');
+
+                if (!rawInput) {
+                    showMessage("Vui lòng nhập một số.", true);
+                    return;
+                }
+
+                const number = parseInt(rawInput, 10);
+                
+                if (isNaN(number) || number < 0 || number > MAX_NUMBER_LIMIT) {
+                    showMessage(`Số phải là số nguyên dương và nằm trong phạm vi từ 0 đến ${MAX_NUMBER_LIMIT.toLocaleString('en-US')}.`, true);
+                    return;
+                }
+
+                const romajiResult = convertNumberToRomaji(number);
+                
+                renderRomajiForHighlight(romajiResult);
+                resultBox.classList.remove('hidden');
+                
+            } catch (error) {
+                console.error("Lỗi trong quá trình chuyển đổi:", error);
+                showMessage("Đã xảy ra lỗi hệ thống trong quá trình chuyển đổi. Vui lòng kiểm tra Console.", true);
+            }
+        }
+        
+        function copyResult() {
+            const resultOutput = document.getElementById('resultOutput');
+            const textToCopy = resultOutput.textContent;
+
+            if (textToCopy) {
+                navigator.clipboard.writeText(textToCopy).then(() => {
+                    showMessage("Đã sao chép kết quả Romaji vào clipboard!", false);
+                }).catch(err => {
+                    console.error('Không thể sao chép:', err);
+                    showMessage("Lỗi: Không thể sao chép. Vui lòng thử thủ công.", true);
+                });
+            } else {
+                showMessage("Không có kết quả để sao chép.", true);
+            }
+        }
+        
+        function toggleTheme() {
+            const body = document.body;
+            const currentTheme = body.getAttribute('data-theme');
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+            body.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            document.getElementById('themeToggle').querySelector('i').className = newTheme === 'dark' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+        }
+        
+        function loadTheme() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.body.setAttribute('data-theme', savedTheme);
+            document.getElementById('themeToggle').querySelector('i').className = savedTheme === 'dark' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+        }
+
+        function updateSliderValue(sliderId, valueId) {
+            const slider = document.getElementById(sliderId);
+            const valueSpan = document.getElementById(valueId);
+            if (slider && valueSpan) {
+                valueSpan.textContent = slider.value;
+            }
+        }
+
+        // Gắn sự kiện
+        document.addEventListener('DOMContentLoaded', () => {
+            loadTheme();
+            
+            document.getElementById('convertButton').addEventListener('click', handleConversion);
+            document.getElementById('numberInput').addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') handleConversion();
+            });
+            document.getElementById('copyButton').addEventListener('click', copyResult);
+            document.getElementById('speakerButton').addEventListener('click', () => {
+                 const resultText = document.getElementById('resultOutput').textContent;
+                 speakRomaji(resultText);
+            });
+            document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+            
+            document.getElementById('voiceSelect').addEventListener('change', (event) => {
+                selectedVoiceIndex = parseInt(event.target.value, 10);
+                if (window.speechSynthesis.speaking) window.speechSynthesis.cancel();
+            });
+
+            document.getElementById('rateInput').addEventListener('input', () => updateSliderValue('rateInput', 'rateValue'));
+            document.getElementById('pitchInput') ? document.getElementById('pitchInput').addEventListener('input', () => updateSliderValue('pitchInput', 'pitchValue')) : null;
+            
+            populateVoiceList();
         });
-        historyList.appendChild(row);
-      });
-    }
-
-    // show result area and populate values
-    function showResult(number, romaji, speak=false){
-      resultArea.classList.remove('hidden');
-      renderRomajiWords(romaji);
-      const kana = romajiToHiragana(romaji);
-      kanaOutput.textContent = kana ? `Hiragana: ${kana}` : '';
-      showMessage('', false);
-
-      // push to history
-      pushHistory({ number: number, romaji: romaji });
-
-      // auto speak if enabled OR explicit speak param
-      const auto = autoSpeakToggle.checked || localStorage.getItem(AUTO_SPEAK_KEY) === '1';
-      if (auto || speak) setTimeout(()=> speakFullRomaji(romaji), 200);
-    }
-
-    // handle conversion
-    function handleConversion(){
-      const raw = numberInput.value.trim();
-      if (!raw) { showMessage('Vui lòng nhập một số.', true); return; }
-      const num = parseInt(raw,10);
-      if (isNaN(num) || num < 0 || num > 9999999) { showMessage('Số không hợp lệ (0 - 9,999,999).', true); return; }
-      const romaji = convertNumberToRomaji(num);
-      if (!romaji) { showMessage('Không thể chuyển đổi.', true); return; }
-      showResult(num, romaji);
-    }
-
-    // events
-    convertButton.addEventListener('click', handleConversion);
-    numberInput.addEventListener('keydown', (e)=>{
-      if (e.key === 'Enter') handleConversion();
-    });
-
-    speakBtn.addEventListener('click', ()=>{
-      const romajiText = resultOutput.textContent.trim();
-      if (!romajiText) { showMessage('Không có nội dung để đọc.', true); return; }
-      if (isSpeaking) { speechSynthesis.cancel(); isSpeaking = false; }
-      speakFullRomaji(romajiText);
-    });
-
-    copyBtn.addEventListener('click', ()=>{
-      const rom = resultOutput.textContent.trim();
-      const num = (loadHistory()[0] && loadHistory()[0].romaji === rom) ? loadHistory()[0].number : null;
-      const out = num ? `${num} → ${rom}` : rom;
-      copyToClipboard(out);
-    });
-
-    clearHistoryBtn.addEventListener('click', ()=>{
-      if (confirm('Xóa toàn bộ lịch sử?')) clearHistory();
-    });
-
-    // keyboard shortcuts: Space = speak (when not focused on input), Ctrl/Cmd+C copy
-    window.addEventListener('keydown', (e)=>{
-      const active = document.activeElement;
-      if (e.code === 'Space' && active !== numberInput) {
-        e.preventDefault();
-        speakBtn.click();
-      }
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c' && active !== numberInput) {
-        e.preventDefault();
-        copyBtn.click();
-      }
-    });
-
-    // initial render
-    renderHistory();
-
-    // show a helpful message about TTS support (optional)
-    if (!('speechSynthesis' in window)) {
-      showMessage('Lưu ý: Trình duyệt của bạn có thể không hỗ trợ phát âm thanh (Web Speech API).', true);
-    }
-  </script>
+    </script>
 </body>
 </html>
